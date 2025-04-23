@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -134,3 +135,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+=======
+node_modules/
+.env
+.DS_Store
+npm-debug.log
+coverage/
+.vscode/
+>>>>>>> f70528c (first commit : just preq.)
