@@ -1,45 +1,57 @@
 /**
- * Formats a school object for API response
- * @param {Object} school - Raw school data from database
- * @param {number} distance - Optional distance from user in kilometers
- * @returns {Object} Formatted school object
+ * Data Transfer Object for school entities
+ * Handles transformation and validation of school data between layers
  */
-function formatSchool(school, distance = null) {
-  const formattedSchool = {
-    id: school.id,
-    name: school.name,
-    address: school.address,
-    coordinates: {
-      latitude: school.latitude,
-      longitude: school.longitude
+class SchoolDto {
+  /**
+   * Creates a new SchoolDto instance
+   * 
+   * @param {Object} data - School data to be encapsulated
+   * @param {number} [data.id] - School ID (if available)
+   * @param {string} data.name - School name
+   * @param {string} data.address - School physical address
+   * @param {number} data.latitude - Geographic latitude coordinate
+   * @param {number} data.longitude - Geographic longitude coordinate
+   * @param {number} [data.distance] - Distance from reference point (optional)
+   */
+  constructor(data) {
+    this.id = data.id;
+    this.name = data.name;
+    this.address = data.address;
+    this.latitude = data.latitude;
+    this.longitude = data.longitude;
+    
+    // Include distance property only if provided
+    if (data.distance !== undefined) {
+      this.distance = data.distance;
     }
-  };
-  
-  if (distance !== null) {
-    formattedSchool.distance = {
-      value: parseFloat(distance.toFixed(2)),
-      unit: 'km'
-    };
   }
   
-  return formattedSchool;
+  /**
+   * Creates a DTO from database entity
+   * 
+   * @param {Object} dbSchool - School record from database
+   * @returns {SchoolDto} Formatted school DTO
+   */
+  static fromDB(dbSchool) {
+    return new SchoolDto(dbSchool);
+  }
+  
+  /**
+   * Creates a data object from HTTP request body
+   * Handles type conversion for numeric fields
+   * 
+   * @param {Object} reqBody - HTTP request body containing school data
+   * @returns {Object} Formatted school data object ready for service layer
+   */
+  static fromRequest(reqBody) {
+    return {
+      name: reqBody.name,
+      address: reqBody.address,
+      latitude: parseFloat(reqBody.latitude),
+      longitude: parseFloat(reqBody.longitude)
+    };
+  }
 }
 
-/**
- * Creates a school object for database insertion
- * @param {Object} data - School data from request
- * @returns {Object} School object ready for database insertion
- */
-function createSchoolDto(data) {
-  return {
-    name: data.name,
-    address: data.address,
-    latitude: data.latitude,
-    longitude: data.longitude
-  };
-}
-
-module.exports = {
-  formatSchool,
-  createSchoolDto
-};
+module.exports = SchoolDto;

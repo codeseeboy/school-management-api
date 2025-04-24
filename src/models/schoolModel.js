@@ -1,34 +1,39 @@
-// School model definition - represents the schools table structure
-const SchoolModel = {
-  id: {
-    type: 'int',
-    primaryKey: true,
-    autoIncrement: true
+/**
+ * School model schema defining field types and constraints
+ * @typedef {Object} SchoolModel
+ * @property {Object} id - Primary key configuration
+ * @property {Object} name - School name configuration
+ * @property {Object} address - School address configuration
+ * @property {Object} latitude - School latitude coordinate configuration
+ * @property {Object} longitude - School longitude coordinate configuration
+ */
+const schoolModel = {
+  id: { 
+    type: 'INT', 
+    primaryKey: true, 
+    autoIncrement: true,
+    description: 'Unique identifier for the school'
   },
-  name: {
-    type: 'varchar',
-    required: true
+  name: { 
+    type: 'VARCHAR(255)', 
+    notNull: true,
+    description: 'Name of the school'
   },
-  address: {
-    type: 'varchar',
-    required: true
+  address: { 
+    type: 'VARCHAR(255)', 
+    notNull: true,
+    description: 'Physical address of the school'
   },
-  latitude: {
-    type: 'float',
-    required: true
+  latitude: { 
+    type: 'FLOAT', 
+    notNull: true,
+    description: 'Geographical latitude coordinate'
   },
-  longitude: {
-    type: 'float',
-    required: true
-  },
-  created_at: {
-    type: 'timestamp',
-    defaultValue: 'CURRENT_TIMESTAMP'
-  },
-  updated_at: {
-    type: 'timestamp',
-    defaultValue: 'CURRENT_TIMESTAMP'
+  longitude: { 
+    type: 'FLOAT', 
+    notNull: true,
+    description: 'Geographical longitude coordinate'
   }
 };
 
-module.exports = SchoolModel;
+export default schoolModel;

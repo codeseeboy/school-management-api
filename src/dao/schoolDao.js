@@ -1,45 +1,60 @@
-const db = require('../config/database');
+const { pool } = require('../config/dbConfig');
 
 /**
- * Data Access Object for Schools
+ * Data Access Object for school-related database operations
+ * Handles database interactions for school entities
  */
-const SchoolDao = {
+class SchoolDao {
   /**
-   * Add a new school to the database
-   * @param {Object} schoolData - School data
-   * @returns {Object} Created school with ID
+   * Inserts a new school record into the database
+   * 
+   * @async
+   * @param {Object} schoolData - School data to be inserted
+   * @param {string} schoolData.name - School name
+   * @param {string} schoolData.address - School physical address
+   * @param {number} schoolData.latitude - Geographic latitude coordinate
+   * @param {number} schoolData.longitude - Geographic longitude coordinate
+   * @returns {Object} The newly created school record with generated ID
+   * @throws {Error} Database-related errors during insertion or retrieval
    */
-  async addSchool(schoolData) {
+  async createSchool(schoolData) {
     try {
-      const pool = await db.getConnection();
-      const [result] = await pool.query(
+      // Execute insert query with parameterized values for security
+      const [result] = await pool.execute(
         'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)',
         [schoolData.name, schoolData.address, schoolData.latitude, schoolData.longitude]
       );
       
-      // Get the created school
-      const [schools] = await pool.query('SELECT * FROM schools WHERE id = ?', [result.insertId]);
+      // Retrieve the complete record of the newly inserted school
+      const [schools] = await pool.execute('SELECT * FROM schools WHERE id = ?', [result.insertId]);
+      
+      // Return the first (and only) result
       return schools[0];
     } catch (error) {
-      console.error('Error in addSchool DAO:', error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Get all schools from the database
-   * @returns {Array} List of all schools
-   */
-  async getAllSchools() {
-    try {
-      const pool = await db.getConnection();
-      const [schools] = await pool.query('SELECT * FROM schools');
-      return schools;
-    } catch (error) {
-      console.error('Error in getAllSchools DAO:', error);
+      // Log error details for troubleshooting
+      console.error('Error creating school:', error);
       throw error;
     }
   }
-};
+  
+  /**
+   * Retrieves all school records from the database
+   * 
+   * @async
+   * @returns {Array<Object>} List of all school records
+   * @throws {Error} Database-related errors during retrieval
+   */
+  async getAllSchools() {
+    try {
+      // Execute query to fetch all school records
+      const [schools] = await pool.execute('SELECT * FROM schools');
+      return schools;
+    } catch (error) {
+      // Log error details for troubleshooting
+      console.error('Error getting schools:', error);
+      throw error;
+    }
+  }
+}
 
-module.exports = SchoolDao;
+module.exports = new SchoolDao();

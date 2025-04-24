@@ -1,92 +1,83 @@
-const schoolDao = require('../dao/schoolDao');
-const schoolDto = require('../dto/schoolDto');
+let schoolDao = require("../dao/schoolDao");
+let SchoolDto = require("../dto/schoolDto");
+let { calculateDistance } = require("../utils/helpers");
 
 /**
- * School Service - Business Logic Layer
+ * Service class for school operations
  */
-const SchoolService = {
+class SchoolService {
   /**
-   * Add a new school
-   * @param {Object} schoolData - School data from request
-   * @returns {Object} Created school
+   * Adds a new school to the database
+   * @param {Object} schoolData - School data to be added
+   * @param {string} schoolData.name - School name
+   * @param {string} schoolData.address - School address
+   * @param {number} schoolData.latitude - School latitude coordinate
+   * @param {number} schoolData.longitude - School longitude coordinate
+   * @returns {Promise<Object>} Created school DTO
+   * @throws {Error} If school creation fails
    */
   async addSchool(schoolData) {
     try {
-      const schoolToAdd = schoolDto.createSchoolDto(schoolData);
-      const createdSchool = await schoolDao.addSchool(schoolToAdd);
-      return schoolDto.formatSchool(createdSchool);
+      // Validate required fields
+      if (
+        !schoolData.name ||
+        !schoolData.address ||
+        schoolData.latitude === undefined ||
+        schoolData.longitude === undefined
+      ) {
+        throw new Error("Missing required school data fields");
+      }
+
+      // Create school record
+      const school = await schoolDao.createSchool(schoolData);
+
+      // Convert DB model to DTO and return
+      return SchoolDto.fromDB(school);
     } catch (error) {
-      console.error('Error in addSchool service:', error);
-      throw error;
-    }
-  },
-  
-  /**
-   * List all schools sorted by distance to provided coordinates
-   * @param {number} userLat - User latitude
-   * @param {number} userLng - User longitude
-   * @returns {Array} List of schools sorted by proximity
-   */
-  async listSchoolsByProximity(userLat, userLng) {
-    try {
-      // Get all schools
-      const schools = await schoolDao.getAllSchools();
-      
-      // Calculate distance for each school and sort
-      const schoolsWithDistance = schools.map(school => {
-        const distance = calculateDistance(
-          userLat, userLng,
-          school.latitude, school.longitude
-        );
-        
-        return {
-          ...school,
-          distance
-        };
-      });
-      
-      // Sort by distance
-      schoolsWithDistance.sort((a, b) => a.distance - b.distance);
-      
-      // Format with DTO
-      return schoolsWithDistance.map(school => 
-        schoolDto.formatSchool(school, school.distance)
-      );
-    } catch (error) {
-      console.error('Error in listSchoolsByProximity service:', error);
       throw error;
     }
   }
-};
 
-/**
- * Calculate distance between two points using Haversine formula
- * @param {number} lat1 - Latitude of first point
- * @param {number} lon1 - Longitude of first point
- * @param {number} lat2 - Latitude of second point
- * @param {number} lon2 - Longitude of second point
- * @returns {number} Distance in kilometers
- */
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  // Earth's radius in kilometers
-  const R = 6371;
-  
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
-  
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-    
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c;
-  
-  return distance;
+  /**
+   * Lists all schools sorted by distance from given coordinates
+   * @param {number} latitude - User's current latitude
+   * @param {number} longitude - User's current longitude
+   * @returns {Promise<Array>} Schools sorted by proximity (closest first)
+   * @throws {Error} If listing schools fails
+   */
+  async listSchoolsByProximity(latitude, longitude) {
+    try {
+      // Validate coordinates
+      if (latitude === undefined || longitude === undefined) {
+        throw new Error("Missing coordinates for proximity calculation");
+      }
+
+      // Retrieve all schools from database
+      const schools = await schoolDao.getAllSchools();
+
+      // Calculate distance for each school from user's location
+      const schoolsWithDistance = schools.map((school) => {
+        // Calculate distance using Haversine formula
+        const distance = calculateDistance(latitude, longitude, school.latitude, school.longitude);
+
+        // Add distance to school object with 2 decimal precision
+        return {
+          ...school,
+          distance: parseFloat(distance.toFixed(2)),
+        };
+      });
+
+      // Sort schools by distance (ascending order)
+      schoolsWithDistance.sort((a, b) => a.distance - b.distance);
+
+      // Convert each school to DTO format before returning
+      return schoolsWithDistance.map((school) => SchoolDto.fromDB(school));
+    } catch (error) {
+      console.error("Error listing schools:", error);
+      throw error;
+    }
+  }
 }
 
-function toRadians(degrees) {
-  return degrees * (Math.PI/180);
-}
-
-module.exports = SchoolService;
+// Export singleton instance
+module.exports = new SchoolService();

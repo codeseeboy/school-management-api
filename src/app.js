@@ -1,51 +1,46 @@
+// Load environment variables
+const dotenv = require('dotenv');
+dotenv.config();
+
+// import the other required modules
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
 const routes = require('./route');
+const { initializeDatabase } = require('./config/dbConfig');
 const errorHandler = require('./middlewares/errorHandler');
-const serverConfig = require('./config/server');
-const db = require('./config/database');
 
-// Initialize express app
+
+// Create Express app
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Apply middlewares
-app.use(helmet());
-app.use(cors(serverConfig.corsOptions));
+// Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Apply routes
-app.use('/api', routes);
+// Routes
+app.use(routes);
 
-// Apply error handler
+// Error handling middleware
 app.use(errorHandler);
 
-// Handle 404 routes
-app.use('*', (req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: 'Route not found'
-  });
-});
-
 // Initialize database and start server
-const PORT = serverConfig.port;
-async function startServer() {
+const startServer = async () => {
   try {
-    // Initialize database connection
-    await db.initialize();
+    // Initialize database
+    await initializeDatabase();
     
-    // Start listening for requests
+    // Start server
     app.listen(PORT, () => {
-      console.log(`Server running in ${serverConfig.env} mode on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
-}
+};
 
 startServer();
 
-module.exports = app; // Export for testing
+module.exports = app;
